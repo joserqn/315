@@ -1,7 +1,25 @@
 import streamlit as st
 import pandas as pd
-import gspread
+import json
 from google.oauth2.service_account import Credentials
+
+# Lê as credenciais do secrets.toml
+credentials_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
+
+# Define os escopos de acesso à API do Sheets
+scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+
+# Cria as credenciais de conta de serviço
+creds = Credentials.from_service_account_info(credentials_dict, scopes=scopes)
+
+import gspread
+
+client = gspread.authorize(creds)
+spreadsheet = client.open_by_key("SEU_ID_DA_PLANILHA")
+aba = spreadsheet.worksheet("Nome da Aba")
+dados = aba.get_all_records()
+
+
 
 # Função para autenticar e retornar cliente gspread
 def autenticar_google_sheets():
