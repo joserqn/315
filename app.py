@@ -1,83 +1,68 @@
 import streamlit as st
 import pandas as pd
-import json
-from google.oauth2.service_account import Credentials
-
-# Lê as credenciais do secrets.toml
-credentials_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
-
-# Define os escopos de acesso à API do Sheets
-scopes = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
-
-# Cria as credenciais de conta de serviço
-creds = Credentials.from_service_account_info(credentials_dict, scopes=scopes)
-
 import gspread
+from google.oauth2.service_account import Credentials
+from st_aggrid import AgGrid, GridOptionsBuilder
 
-client = gspread.authorize(creds)
-spreadsheet = client.open_by_key("SEU_ID_DA_PLANILHA")
-aba = spreadsheet.worksheet("Nome da Aba")
-dados = aba.get_all_records()
+# --- Autenticação Google Sheets ---
+SCOPES = [
+    "https://www.googleapis.com/auth/spreadsheets.readonly",
+    "https://www.googleapis.com/auth/drive.readonly"
+]
 
+# Lê o JSON do secrets.toml como string e carrega com google.oauth2
+import json
+creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
+creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
 
+# --- Sessão de senha interna da equipe ---
+if "autenticado" not in st.session_state:
+    st.session_state.autenticado = False
 
-# Função para autenticar e retornar cliente gspread
-def autenticar_google_sheets():
-    scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
-    ]
-    credentials = Credentials.from_service_account_file(
-        "credentials.json", scopes=scopes
-    )
-    client = gspread.authorize(credentials)
-    return client
+if not st.session_state.autenticado:
+    st.title("🔐 Acesso restrito")
+    senha = st.text_input("Digite a senha de acesso da equipe:", type="password")
+    if st.button("Entrar"):
+        if senha == "minha_senha_segura":  # substitua pela sua senha real
+            st.session_state.autenticado = True
+            st.rerun()
+        else:
+            st.error("Senha incorreta. Tente novamente.")
+    st.stop()
 
-# Função principal
-def main():
-    import streamlit as st
+# --- Acesso à planilha ---
+st.title("🔎 Consulta de dados protegidos")
 
-# Função de autenticação
-def autenticar():
-    st.title("Acesso restrito")
-    senha = st.text_input("Digite a senha de acesso", type="password")
-    if senha == "9~3WaOxD&X$0":
-        st.session_state["autenticado"] = True
-        st.rerun()
-    elif senha != "":
-        st.warning("Senha incorreta.")
+url = st.text_input("Cole o link da planilha do Google Sheets aqui:")
 
-# Verifica se o usuário está autenticado
-if "autenticado" not in st.session_state or not st.session_state["autenticado"]:
-    autenticar()
-else:
-    # CONTEÚDO PRINCIPAL DA APLICAÇÃO
-    st.title("Consulta de Planilha")
-    st.write("Bem-vindo à aplicação!")
-    # (Aqui você pode colocar carregamento da planilha, filtros, buscas etc.)
+if url:
+    try:
+        # Extrair o ID do Google Sheets
+        import re
+        match = re.search(r"/d/([a-zA-Z0-9-_]+)", url)
+        if not match:
+            st.error("URL inválida. Certifique-se de colar o link correto da planilha.")
+        else:
+            sheet_id = match.group(1)
 
-    st.title("Consulta de Planilha do Google Sheets")
+            # Conecta ao Google Sheets
+            client = gspread.authorize(creds)
+            sheet = client.open_by_key(sheet_id)
 
-    planilha_id = st.text_input("Digite o ID da planilha do Google Sheets:")
-
-    if planilha_id:
-        try:
-            client = autenticar_google_sheets()
-            sheet = client.open_by_key(planilha_id)
-            abas = sheet.worksheets()
-
-            nomes_abas = [aba.title for aba in abas]
-            aba_escolhida = st.selectbox("Escolha a aba para visualizar:", nomes_abas)
-
-            worksheet = sheet.worksheet(aba_escolhida)
+            aba = st.selectbox("Escolha a aba da planilha:", [ws.title for ws in sheet.worksheets()])
+            worksheet = sheet.worksheet(aba)
             dados = worksheet.get_all_records()
             df = pd.DataFrame(dados)
 
-            st.success("Planilha carregada com sucesso!")
-            st.dataframe(df)
+            st.success("Dados carregados com sucesso!")
 
-        except Exception as e:
-            st.error(f"Erro ao acessar a planilha: {str(e)}")
+            # Interface com AgGrid
+            gb = GridOptionsBuilder.from_dataframe(df)
+            gb.configure_pagination(paginationAutoPageSize=True)
+            gb.configure_default_column(groupable=True, editable=False)
+            gridOptions = gb.build()
 
-if __name__ == "__main__":
-    main()
+            AgGrid(df, gridOptions=gridOptions, fit_columns_on_grid_load=True)
+
+    except Exception as e:
+        st.error(f"Erro ao acessar a planilha: {e}")
