@@ -16,7 +16,7 @@ if user_code == ACCESS_CODE:
     st.success("Acesso liberado")
 
     # Carregar credenciais da conta de serviço
-    creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
+    creds_dict = st.secrets["GOOGLE_CREDENTIALS"]
     credentials = service_account.Credentials.from_service_account_info(
         creds_dict,
         scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
