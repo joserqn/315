@@ -1,9 +1,8 @@
 streamlit
-st-aggrid
 pandas
+gdown
 gspread
 google-auth
 google-auth-oauthlib
 google-auth-httplib2
-oauth2client
-google-api-python-client
+streamlit-aggrid
