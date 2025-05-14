@@ -1,68 +1,57 @@
 import streamlit as st
 import pandas as pd
-import gspread
-from google.oauth2.service_account import Credentials
-from st_aggrid import AgGrid, GridOptionsBuilder
-
-# --- Autenticação Google Sheets ---
-SCOPES = [
-    "https://www.googleapis.com/auth/spreadsheets.readonly",
-    "https://www.googleapis.com/auth/drive.readonly"
-]
-
-# Lê o JSON do secrets.toml como string e carrega com google.oauth2
 import json
-creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
-creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
 
-# --- Sessão de senha interna da equipe ---
-if "autenticado" not in st.session_state:
-    st.session_state.autenticado = False
+# Código secreto da equipe
+ACCESS_CODE = "suacodesecreto"
 
-if not st.session_state.autenticado:
-    st.title("🔐 Acesso restrito")
-    senha = st.text_input("Digite a senha de acesso da equipe:", type="password")
-    if st.button("Entrar"):
-        if senha == "minha_senha_segura":  # substitua pela sua senha real
-            st.session_state.autenticado = True
-            st.rerun()
-        else:
-            st.error("Senha incorreta. Tente novamente.")
-    st.stop()
+st.title("Consulta de Planilha Protegida")
 
-# --- Acesso à planilha ---
-st.title("🔎 Consulta de dados protegidos")
+# Campo de autenticação simples
+user_code = st.text_input("Digite o código de acesso:", type="password")
 
-url = st.text_input("Cole o link da planilha do Google Sheets aqui:")
+if user_code == ACCESS_CODE:
+    st.success("Acesso liberado")
 
-if url:
-    try:
-        # Extrair o ID do Google Sheets
-        import re
-        match = re.search(r"/d/([a-zA-Z0-9-_]+)", url)
-        if not match:
-            st.error("URL inválida. Certifique-se de colar o link correto da planilha.")
-        else:
-            sheet_id = match.group(1)
+    # Carregar credenciais da conta de serviço
+    creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
+    credentials = service_account.Credentials.from_service_account_info(
+        creds_dict,
+        scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
+    )
 
-            # Conecta ao Google Sheets
-            client = gspread.authorize(creds)
-            sheet = client.open_by_key(sheet_id)
+    # ID da planilha (copie da URL do Google Sheets)
+    SHEET_ID = "coloque_o_id_aqui"  # Exemplo: "1Lksd89ASDFKJlsdf..."
 
-            aba = st.selectbox("Escolha a aba da planilha:", [ws.title for ws in sheet.worksheets()])
-            worksheet = sheet.worksheet(aba)
-            dados = worksheet.get_all_records()
-            df = pd.DataFrame(dados)
+    # Nome da aba (ou faixa exata)
+    RANGE = "Página1!A1:Z1000"  # Ajuste conforme sua planilha
 
-            st.success("Dados carregados com sucesso!")
+    # Conectar à API
+    service = build("sheets", "v4", credentials=credentials)
+    sheet = service.spreadsheets()
 
-            # Interface com AgGrid
-            gb = GridOptionsBuilder.from_dataframe(df)
-            gb.configure_pagination(paginationAutoPageSize=True)
-            gb.configure_default_column(groupable=True, editable=False)
-            gridOptions = gb.build()
+    # Buscar dados
+    result = sheet.values().get(spreadsheetId=SHEET_ID, range=RANGE).execute()
+    values = result.get("values", [])
 
-            AgGrid(df, gridOptions=gridOptions, fit_columns_on_grid_load=True)
+    if not values:
+        st.warning("Planilha vazia.")
+    else:
+        # Converter para DataFrame
+        df = pd.DataFrame(values[1:], columns=values[0])
 
-    except Exception as e:
-        st.error(f"Erro ao acessar a planilha: {e}")
+        # Campo de busca
+        termo = st.text_input("Digite a palavra para buscar:")
+
+        if termo:
+            resultado = df[df.apply(lambda row: row.astype(str).str.contains(termo, case=False).any(), axis=1)]
+            if resultado.empty:
+                st.info("Nenhum resultado encontrado.")
+            else:
+                st.dataframe(resultado)
+
+else:
+    if user_code:
+        st.error("Código incorreto.")
