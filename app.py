@@ -17,7 +17,7 @@ if user_code == ACCESS_CODE:
     try:
         # Carregar credenciais da conta de serviço a partir do secrets
         credentials = service_account.Credentials.from_service_account_info(
-            st.secrets["GOOGLE_CREDENTIALS"],
+            dict(st.secrets["GOOGLE_CREDENTIALS"]),
             scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
         )
     except Exception as e:
