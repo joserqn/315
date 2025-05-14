@@ -7,8 +7,8 @@ import json
 from google.oauth2 import service_account
 
 # Lê as credenciais do secrets
-creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
-credentials = service_account.Credentials.from_service_account_info(creds_dict)
+
+credentials = service_account.Credentials.from_service_account_info(st.secrets["GOOGLE_CREDENTIALS"])
 
 # --- Autenticação Google Sheets ---
 SCOPES = [
