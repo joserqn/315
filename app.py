@@ -3,12 +3,6 @@ import pandas as pd
 import gspread
 from google.oauth2.service_account import Credentials
 from st_aggrid import AgGrid, GridOptionsBuilder
-import json
-from google.oauth2 import service_account
-
-# Lê as credenciais do secrets
-
-credentials = service_account.Credentials.from_service_account_info(st.secrets["GOOGLE_CREDENTIALS"])
 
 # --- Autenticação Google Sheets ---
 SCOPES = [
