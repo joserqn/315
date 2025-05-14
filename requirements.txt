@@ -6,4 +6,7 @@ google-auth
 google-auth-oauthlib
 google-auth-httplib2
 streamlit-aggrid
+google-api-python-client
+gspread
+
 
