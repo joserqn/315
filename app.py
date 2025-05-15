@@ -49,7 +49,7 @@ RANGE = "Página1!A1:Z1000"
         sheet = service.spreadsheets()
 
         # Buscar dados da planilha
-        result = sheet.values().get(spreadsheetId=SHEET_ID, range=RANGE).execute()
+        result = sheet.values().get(spreadsheetId=sheet_id_input, range=RANGE).execute()
         values = result.get("values", [])
 
         if not values:
