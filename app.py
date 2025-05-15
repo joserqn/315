@@ -37,10 +37,11 @@ if user_code == ACCESS_CODE:
 
 
     # ID da planilha do Google Sheets (substitua pelo seu)
-    SHEET_ID = "SEU_ID_DA_PLANILHA"
+    # Campo para o usuário inserir o ID da planilha
+sheet_id_input = st.text_input("Cole o ID da planilha do Google Sheets:")
 
-    # Nome da aba ou intervalo (range) desejado
-    RANGE = "Página1!A1:Z1000"
+# Nome da aba ou intervalo (range) desejado
+RANGE = "Página1!A1:Z1000"
 
     try:
         # Conectar à API
