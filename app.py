@@ -15,11 +15,17 @@ if user_code == ACCESS_CODE:
     st.success("Acesso liberado.")
 
     try:
-        # Carregar credenciais da conta de serviço a partir do secrets
+        cred_info = dict(st.secrets["GOOGLE_CREDENTIALS"])
+
+        if "private_key" not in cred_info:
+            st.error("A chave 'private_key' não foi encontrada em GOOGLE_CREDENTIALS.")
+            st.stop()
+
         credentials = service_account.Credentials.from_service_account_info(
-            dict(st.secrets["GOOGLE_CREDENTIALS"]),
+            cred_info,
             scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
         )
+
     except Exception as e:
         st.error(f"Erro ao carregar credenciais: {e}")
         st.stop()
