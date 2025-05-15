@@ -43,7 +43,6 @@ sheet_id_input = st.text_input("Cole o ID da planilha do Google Sheets:")
 # Nome da aba ou intervalo (range) desejado
 RANGE = "Página1!A1:Z1000"
 
-    try:
         # Conectar à API
         service = build("sheets", "v4", credentials=credentials)
         sheet = service.spreadsheets()
