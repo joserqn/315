@@ -38,7 +38,7 @@ if user_code == ACCESS_CODE:
 
 
     # ID da planilha do Google Sheets (substitua pelo seu)
-    SHEET_ID = "SEU_ID_DA_PLANILHA"
+    SHEET_ID = "14HITtLQ8uMj2SQ4H7OxED5AH2as9-O0mg5E7tNks6_Y"
 
     # Nome da aba ou intervalo (range) desejado
     RANGE = "Página1!A1:Z1000"
