@@ -19,62 +19,55 @@ if user_code == ACCESS_CODE:
     st.success("Acesso liberado.")
 
     try:
-        creds_dict = dict(st.secrets["GOOGLE_CREDENTIALS"])
-
-        # Verificações explícitas da private_key
-        private_key = creds_dict.get("private_key")
-        if not private_key:
-            st.error("Erro: 'private_key' não encontrada nas credenciais.")
-            st.stop()
-        if "-----BEGIN PRIVATE KEY-----" not in private_key or "-----END PRIVATE KEY-----" not in private_key:
-            st.error("Erro: 'private_key' parece estar mal formatada.")
-            st.stop()
-
-        # Criar credenciais
+        # Carregar credenciais da conta de serviço
         credentials = service_account.Credentials.from_service_account_info(
-            creds_dict,
+            st.secrets["GOOGLE_CREDENTIALS"],
             scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
         )
-
     except Exception as e:
         st.error(f"Erro ao carregar credenciais: {e}")
         st.stop()
 
+    # Inputs da planilha
+    sheet_link_or_id = st.text_input("Cole o link ou ID da planilha do Google Sheets:")
+    sheet_tab_name = st.text_input("Nome exato da aba (ex: Página1):")
+    search_term = st.text_input("Digite a palavra para buscar:")
 
-    # --- Acesso à planilha ---
-st.title("🔎 Consulta de dados protegidos")
-
-url = st.text_input("Cole o link da planilha do Google Sheets aqui:")
-
-if url:
-    try:
-        # Extrair o ID do Google Sheets
-        import re
-        match = re.search(r"/d/([a-zA-Z0-9-_]+)", url)
-        if not match:
-            st.error("URL inválida. Certifique-se de colar o link correto da planilha.")
+    if sheet_link_or_id and sheet_tab_name:
+        # Extrair ID da planilha caso o usuário cole o link inteiro
+        if "docs.google.com" in sheet_link_or_id:
+            try:
+                sheet_id = sheet_link_or_id.split("/d/")[1].split("/")[0]
+            except:
+                st.error("Link da planilha inválido.")
+                st.stop()
         else:
-            sheet_id = match.group(1)
+            sheet_id = sheet_link_or_id  # Supõe que é só o ID
 
-            # Conecta ao Google Sheets
-            client = gspread.authorize(Credentials)
-            sheet = client.open_by_key(sheet_id)
+        range_name = f"{sheet_tab_name}!A1:Z1000"
 
-            aba = st.selectbox("Escolha a aba da planilha:", [ws.title for ws in sheet.worksheets()])
-            worksheet = sheet.worksheet(aba)
-            dados = worksheet.get_all_records()
-            df = pd.DataFrame(dados)
+        try:
+            # Conectar à API
+            service = build("sheets", "v4", credentials=credentials)
+            sheet = service.spreadsheets()
 
-            st.success("Dados carregados com sucesso!")
+            # Buscar dados
+            result = sheet.values().get(spreadsheetId=sheet_id, range=range_name).execute()
+            values = result.get("values", [])
 
-            # Interface com AgGrid
-            gb = GridOptionsBuilder.from_dataframe(df)
-            gb.configure_pagination(paginationAutoPageSize=True)
-            gb.configure_default_column(groupable=True, editable=False)
-            gridOptions = gb.build()
+            if not values:
+                st.warning("A planilha está vazia ou o intervalo/aba está incorreto.")
+            else:
+                df = pd.DataFrame(values[1:], columns=values[0])
 
-            AgGrid(df, gridOptions=gridOptions, fit_columns_on_grid_load=True)
+                if search_term:
+                    resultado = df[df.apply(lambda row: row.astype(str).str.contains(search_term, case=False).any(), axis=1)]
+                    if resultado.empty:
+                        st.info("Nenhum resultado encontrado.")
+                    else:
+                        st.dataframe(resultado)
+                else:
+                    st.info("Digite um termo para buscar.")
 
-    except Exception as e:
-        st.error(f"Erro ao acessar a planilha: {e}")
-
+        except Exception as e:
+            st.error(f"Erro ao acessar a planilha: {e}")
