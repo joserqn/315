@@ -43,9 +43,17 @@ sheet_id_input = st.text_input("Cole o ID da planilha do Google Sheets:")
 # Nome da aba ou intervalo (range) desejado
 RANGE = "Página1!A1:Z1000"
 
-        # Conectar à API
+try:
         service = build("sheets", "v4", credentials=credentials)
         sheet = service.spreadsheets()
+        result = sheet.values().get(spreadsheetId=sheet_id_input, range=RANGE).execute()
+        values = result.get("values", [])
+
+        if not values:
+            st.warning("Planilha vazia ou intervalo inválido.")
+        else:
+            df = pd.DataFrame(values[1:], columns=values[0])
+            termo = st.text_input("Digite a palavra para buscar:")
 
         # Buscar dados da planilha
         result = sheet.values().get(spreadsheetId=sheet_id_input, range=RANGE).execute()
