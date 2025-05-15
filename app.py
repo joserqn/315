@@ -15,11 +15,8 @@ if user_code == ACCESS_CODE:
     st.success("Acesso liberado.")
 
     try:
-        cred_info = dict(st.secrets["GOOGLE_CREDENTIALS"])
         creds_dict = dict(st.secrets["GOOGLE_CREDENTIALS"])
 
-        if "private_key" not in cred_info:
-            st.error("A chave 'private_key' não foi encontrada em GOOGLE_CREDENTIALS.")
         # Verificações explícitas da private_key
         private_key = creds_dict.get("private_key")
         if not private_key:
@@ -31,7 +28,6 @@ if user_code == ACCESS_CODE:
 
         # Criar credenciais
         credentials = service_account.Credentials.from_service_account_info(
-            cred_info,
             creds_dict,
             scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
         )
