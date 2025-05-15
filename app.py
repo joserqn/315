@@ -19,7 +19,7 @@ if user_code == ACCESS_CODE:
 
         # Verificações explícitas da private_key
         private_key = creds_dict.get("private_key")
-            if not private_key:
+                if not private_key:
             st.error("Erro: 'private_key' não encontrada nas credenciais.")
             st.stop()
                 if "-----BEGIN PRIVATE KEY-----" not in private_key or "-----END PRIVATE KEY-----" not in private_key:
