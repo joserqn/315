@@ -8,7 +8,7 @@ from st_aggrid import AgGrid, GridOptionsBuilder
 
 
 # Código secreto da equipe (altere para seu código real)
-ACCESS_CODE = "9~3WaOxD&X$0"
+ACCESS_CODE = st.secrets["app"]["access_code"]
 
 st.title("Consulta de Planilha Protegida")
 
