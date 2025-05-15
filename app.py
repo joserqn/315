@@ -37,40 +37,40 @@ if user_code == ACCESS_CODE:
         st.stop()
 
 
-    # ID da planilha do Google Sheets (substitua pelo seu)
-    SHEET_ID = "14HITtLQ8uMj2SQ4H7OxED5AH2as9-O0mg5E7tNks6_Y"
+    # --- Acesso à planilha ---
+st.title("🔎 Consulta de dados protegidos")
 
-    # Nome da aba ou intervalo (range) desejado
-    RANGE = "Página1!A1:Z1000"
+url = st.text_input("Cole o link da planilha do Google Sheets aqui:")
 
+if url:
     try:
-        # Conectar à API
-        service = build("sheets", "v4", credentials=credentials)
-        sheet = service.spreadsheets()
-
-        # Buscar dados da planilha
-        result = sheet.values().get(spreadsheetId=SHEET_ID, range=RANGE).execute()
-        values = result.get("values", [])
-
-        if not values:
-            st.warning("Planilha vazia ou intervalo inválido.")
+        # Extrair o ID do Google Sheets
+        import re
+        match = re.search(r"/d/([a-zA-Z0-9-_]+)", url)
+        if not match:
+            st.error("URL inválida. Certifique-se de colar o link correto da planilha.")
         else:
-            # Converter dados para DataFrame, garantindo que tenha cabeçalho
-            df = pd.DataFrame(values[1:], columns=values[0])
+            sheet_id = match.group(1)
 
-            termo = st.text_input("Digite a palavra para buscar:")
+            # Conecta ao Google Sheets
+            client = gspread.authorize(creds)
+            sheet = client.open_by_key(sheet_id)
 
-            if termo:
-                # Buscar termo em qualquer coluna, ignorando maiúsculas/minúsculas
-                resultado = df[df.apply(lambda row: row.astype(str).str.contains(termo, case=False, na=False).any(), axis=1)]
+            aba = st.selectbox("Escolha a aba da planilha:", [ws.title for ws in sheet.worksheets()])
+            worksheet = sheet.worksheet(aba)
+            dados = worksheet.get_all_records()
+            df = pd.DataFrame(dados)
 
-                if resultado.empty:
-                    st.info("Nenhum resultado encontrado.")
-                else:
-                    st.dataframe(resultado)
+            st.success("Dados carregados com sucesso!")
+
+            # Interface com AgGrid
+            gb = GridOptionsBuilder.from_dataframe(df)
+            gb.configure_pagination(paginationAutoPageSize=True)
+            gb.configure_default_column(groupable=True, editable=False)
+            gridOptions = gb.build()
+
+            AgGrid(df, gridOptions=gridOptions, fit_columns_on_grid_load=True)
 
     except Exception as e:
         st.error(f"Erro ao acessar a planilha: {e}")
 
-elif user_code:
-    st.error("Código incorreto.")
