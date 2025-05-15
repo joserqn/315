@@ -22,7 +22,7 @@ if user_code == ACCESS_CODE:
         if not private_key:
             st.error("Erro: 'private_key' não encontrada nas credenciais.")
             st.stop()
-        if "-----BEGIN PRIVATE KEY-----" not in private_key or "-----END PRIVATE KEY-----" not in private_key:
+            if "-----BEGIN PRIVATE KEY-----" not in private_key or "-----END PRIVATE KEY-----" not in private_key:
             st.error("Erro: 'private_key' parece estar mal formatada.")
             st.stop()
 
@@ -39,11 +39,11 @@ if user_code == ACCESS_CODE:
     if url:
         try:
         # Extrair o ID do Google Sheets
-        import re
-        match = re.search(r"/d/([a-zA-Z0-9-_]+)", url)
-        if not match:
+            import re
+            match = re.search(r"/d/([a-zA-Z0-9-_]+)", url)
+            if not match:
             st.error("URL inválida. Certifique-se de colar o link correto da planilha.")
-        else:
+            else:
             sheet_id = match.group(1)
 
             # Conecta ao Google Sheets
