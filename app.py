@@ -10,25 +10,39 @@ SCOPES = [
     "https://www.googleapis.com/auth/drive.readonly"
 ]
 
-# Lê o JSON do secrets.toml como string e carrega com google.oauth2
-import json
-creds_dict = json.loads(st.secrets["GOOGLE_CREDENTIALS"])
-creds = Credentials.from_service_account_info(creds_dict, scopes=SCOPES)
-
 # --- Sessão de senha interna da equipe ---
-if "autenticado" not in st.session_state:
-    st.session_state.autenticado = False
+# Código secreto da equipe (altere para seu código real)
+ACCESS_CODE = "suacodesecreto"
 
-if not st.session_state.autenticado:
-    st.title("🔐 Acesso restrito")
-    senha = st.text_input("Digite a senha de acesso da equipe:", type="password")
-    if st.button("Entrar"):
-        if senha == "minha_senha_segura":  # substitua pela sua senha real
-            st.session_state.autenticado = True
-            st.rerun()
-        else:
-            st.error("Senha incorreta. Tente novamente.")
-    st.stop()
+st.title("Consulta de Planilha Protegida")
+
+# Campo de autenticação simples
+user_code = st.text_input("Digite o código de acesso:", type="password")
+
+if user_code == ACCESS_CODE:
+    st.success("Acesso liberado.")
+
+    try:
+        creds_dict = dict(st.secrets["GOOGLE_CREDENTIALS"])
+
+        # Verificações explícitas da private_key
+        private_key = creds_dict.get("private_key")
+        if not private_key:
+            st.error("Erro: 'private_key' não encontrada nas credenciais.")
+            st.stop()
+        if "-----BEGIN PRIVATE KEY-----" not in private_key or "-----END PRIVATE KEY-----" not in private_key:
+            st.error("Erro: 'private_key' parece estar mal formatada.")
+            st.stop()
+
+        # Criar credenciais
+        credentials = service_account.Credentials.from_service_account_info(
+            creds_dict,
+            scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
+        )
+
+    except Exception as e:
+        st.error(f"Erro ao carregar credenciais: {e}")
+        st.stop()
 
 # --- Acesso à planilha ---
 st.title("🔎 Consulta de dados protegidos")
