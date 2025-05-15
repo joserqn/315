@@ -57,7 +57,7 @@ if url:
             sheet_id = match.group(1)
 
             # Conecta ao Google Sheets
-            client = gspread.authorize("creds_dict")
+            client = gspread.authorize(creds_dict)
             sheet = client.open_by_key(sheet_id)
 
             aba = st.selectbox("Escolha a aba da planilha:", [ws.title for ws in sheet.worksheets()])
