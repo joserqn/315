@@ -15,20 +15,26 @@ if user_code == ACCESS_CODE:
     st.success("Acesso liberado.")
 
     try:
-        cred_info = dict(st.secrets["GOOGLE_CREDENTIALS"])
+        creds_dict = dict(st.secrets["GOOGLE_CREDENTIALS"])
 
-        if "private_key" not in cred_info:
-            st.error("A chave 'private_key' não foi encontrada em GOOGLE_CREDENTIALS.")
+        # Verificações explícitas da private_key
+        private_key = creds_dict.get("private_key")
+        if not private_key:
+            st.error("Erro: 'private_key' não encontrada nas credenciais.")
+            st.stop()
+        if "-----BEGIN PRIVATE KEY-----" not in private_key or "-----END PRIVATE KEY-----" not in private_key:
+            st.error("Erro: 'private_key' parece estar mal formatada.")
             st.stop()
 
+        # Criar credenciais
         credentials = service_account.Credentials.from_service_account_info(
-            cred_info,
+            creds_dict,
             scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
         )
-
     except Exception as e:
         st.error(f"Erro ao carregar credenciais: {e}")
         st.stop()
+
 
     # ID da planilha do Google Sheets (substitua pelo seu)
     SHEET_ID = "SEU_ID_DA_PLANILHA"
