@@ -36,9 +36,8 @@ if user_code == ACCESS_CODE:
         st.error(f"Erro ao carregar credenciais: {e}")
         st.stop()
 
-
     if url:
-    try:
+        try:
         # Extrair o ID do Google Sheets
         import re
         match = re.search(r"/d/([a-zA-Z0-9-_]+)", url)
