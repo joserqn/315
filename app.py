@@ -7,19 +7,19 @@ from google.oauth2.service_account import Credentials
 from st_aggrid import AgGrid, GridOptionsBuilder
 
 
-# Código secreto da equipe (altere para seu código real)
+
 ACCESS_CODE = st.secrets["app"]["access_code"]
 
 st.title("Consulta de Planilha Protegida")
 
-# Campo de autenticação simples
+
 user_code = st.text_input("Digite o código de acesso:", type="password")
 
 if user_code == ACCESS_CODE:
     st.success("Acesso liberado.")
 
     try:
-        # Carregar credenciais da conta de serviço
+   
         credentials = service_account.Credentials.from_service_account_info(
             st.secrets["GOOGLE_CREDENTIALS"],
             scopes=["https://www.googleapis.com/auth/spreadsheets.readonly"],
@@ -28,11 +28,10 @@ if user_code == ACCESS_CODE:
         st.error(f"Erro ao carregar credenciais: {e}")
         st.stop()
 
-       # Input: Link ou ID da planilha
     sheet_link_or_id = st.text_input("Cole o link ou ID da planilha do Google Sheets:")
 
     if sheet_link_or_id:
-        # Extrair ID
+   
         if "docs.google.com" in sheet_link_or_id:
             try:
                 sheet_id = sheet_link_or_id.split("/d/")[1].split("/")[0]
@@ -43,20 +42,18 @@ if user_code == ACCESS_CODE:
             sheet_id = sheet_link_or_id
 
         try:
-            # Conectar à API
+        
             service = build("sheets", "v4", credentials=credentials)
             sheet = service.spreadsheets()
 
-            # Buscar metadados da planilha para listar abas
             metadata = sheet.get(spreadsheetId=sheet_id).execute()
             sheet_titles = [s["properties"]["title"] for s in metadata["sheets"]]
 
             aba_escolhida = st.selectbox("Escolha a aba da planilha:", sheet_titles)
 
-            # Definir intervalo fixo (ajuste conforme necessário)
+ 
             range_name = f"{aba_escolhida}!A1:Z1000"
 
-            # Buscar dados da aba selecionada
             result = sheet.values().get(spreadsheetId=sheet_id, range=range_name).execute()
             values = result.get("values", [])
 
