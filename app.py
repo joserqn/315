@@ -57,12 +57,14 @@ if user_code == ACCESS_CODE:
 
                 termo = st.text_input("Digite a palavra para buscar:")
 
-                if termo:
-                    resultado = df[df.apply(lambda row: row.astype(str).str.contains(termo, case=False).any(), axis=1)]
-                    if resultado.empty:
-                        st.info("Nenhum resultado encontrado.")
-                    else:
-                        st.dataframe(resultado)
+if termo.strip() == "":
+    st.info("Digite um termo para realizar a busca.")
+else:
+    resultado = df[df.apply(lambda row: row.astype(str).str.contains(termo, case=False).any(), axis=1)]
+    if resultado.empty:
+        st.info("Nenhum resultado encontrado.")
+    else:
+        st.dataframe(resultado)
 
         except Exception as e:
             st.error(f"Erro ao acessar a planilha: {e}")
