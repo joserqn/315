@@ -1,9 +1,7 @@
 import streamlit as st
 import pandas as pd
-import gspread
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from google.oauth2.service_account import Credentials
 from st_aggrid import AgGrid, GridOptionsBuilder
 
 ACCESS_CODE = st.secrets["app"]["access_code"]
@@ -27,6 +25,7 @@ if user_code == ACCESS_CODE:
     sheet_link_or_id = st.text_input("Cole o link ou ID da planilha do Google Sheets:")
 
     if sheet_link_or_id:
+        # Extrair ID da planilha se for URL
         if "docs.google.com" in sheet_link_or_id:
             try:
                 sheet_id = sheet_link_or_id.split("/d/")[1].split("/")[0]
@@ -55,14 +54,37 @@ if user_code == ACCESS_CODE:
             else:
                 df = pd.DataFrame(values[1:], columns=values[0])
 
+                # Seleção múltipla das colunas que deseja filtrar
+                colunas_disponiveis = df.columns.tolist()
+                colunas_selecionadas = st.multiselect(
+                    "Selecione as colunas para filtrar a busca:", colunas_disponiveis, default=colunas_disponiveis
+                )
+
                 termo = st.text_input("Digite a palavra para buscar:")
 
-                if termo:
-                    resultado = df[df.apply(lambda row: row.astype(str).str.contains(termo, case=False).any(), axis=1)]
+                # Função para validar se o termo é apenas espaços/pontuação
+                import string
+                def termo_valido(t):
+                    return t and any(c.isalnum() for c in t)
+
+                if termo_valido(termo):
+                    # Busca só nas colunas selecionadas
+                    resultado = df[
+                        df[colunas_selecionadas]
+                        .apply(lambda row: row.astype(str).str.contains(termo, case=False, regex=False).any(), axis=1)
+                    ]
                     if resultado.empty:
                         st.info("Nenhum resultado encontrado.")
                     else:
-                        st.dataframe(resultado)
+                        # Configura AgGrid para manter layout bonito e paginado
+                        gb = GridOptionsBuilder.from_dataframe(resultado)
+                        gb.configure_pagination(paginationAutoPageSize=True)
+                        gb.configure_default_column(groupable=True, editable=False, filter=True)
+                        gridOptions = gb.build()
+
+                        AgGrid(resultado, gridOptions=gridOptions, fit_columns_on_grid_load=True)
+                else:
+                    st.info("Digite um termo válido para realizar a busca (não deixe vazio ou só espaços/pontuação).")
 
         except Exception as e:
             st.error(f"Erro ao acessar a planilha: {e}")
