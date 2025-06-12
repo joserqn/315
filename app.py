@@ -55,16 +55,14 @@ if user_code == ACCESS_CODE:
             else:
                 df = pd.DataFrame(values[1:], columns=values[0])
 
-                termo = st.text_input("Digite a palavra para buscar:")
-
-if termo.strip() == "":
-    st.info("Digite um termo para realizar a busca.")
-else:
+                if termo.strip():
     resultado = df[df.apply(lambda row: row.astype(str).str.contains(termo, case=False).any(), axis=1)]
     if resultado.empty:
         st.info("Nenhum resultado encontrado.")
     else:
         st.dataframe(resultado)
+else:
+    st.info("Digite um termo válido para realizar a busca.")
 
         except Exception as e:
             st.error(f"Erro ao acessar a planilha: {e}")
