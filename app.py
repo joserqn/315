@@ -1,9 +1,7 @@
 import streamlit as st
 import pandas as pd
-import gspread
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from google.oauth2.service_account import Credentials
 from st_aggrid import AgGrid, GridOptionsBuilder
 
 ACCESS_CODE = st.secrets["app"]["access_code"]
@@ -51,20 +49,28 @@ if user_code == ACCESS_CODE:
             values = result.get("values", [])
 
             if not values:
-    st.warning("A aba está vazia ou o intervalo está incorreto.")
-else:
-    df = pd.DataFrame(values[1:], columns=values[0])
+                st.warning("A aba está vazia ou o intervalo está incorreto.")
+            else:
+                df = pd.DataFrame(values[1:], columns=values[0])
 
-    termo = st.text_input("Digite a palavra para buscar:")
+                termo = st.text_input("Digite a palavra para buscar:")
 
-    if termo.strip():
-        resultado = df[df.apply(lambda row: row.astype(str).str.contains(termo, case=False, regex=False).any(), axis=1)]
-        if resultado.empty:
-            st.info("Nenhum resultado encontrado.")
-        else:
-            st.dataframe(resultado)
-    else:
-        st.info("Digite um termo válido para realizar a busca.")
+                if termo.strip():
+                    resultado = df[df.apply(
+                        lambda row: row.astype(str).str.contains(termo, case=False, regex=False).any(),
+                        axis=1
+                    )]
+                    if resultado.empty:
+                        st.info("Nenhum resultado encontrado.")
+                    else:
+                        # Exemplo com AgGrid para tabela interativa (opcional)
+                        gb = GridOptionsBuilder.from_dataframe(resultado)
+                        gb.configure_pagination(paginationAutoPageSize=True)
+                        gb.configure_default_column(editable=False, groupable=True)
+                        gridOptions = gb.build()
+                        AgGrid(resultado, gridOptions=gridOptions, fit_columns_on_grid_load=True)
+                else:
+                    st.info("Digite um termo válido para realizar a busca.")
 
         except Exception as e:
             st.error(f"Erro ao acessar a planilha: {e}")
