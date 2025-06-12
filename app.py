@@ -57,12 +57,15 @@ if user_code == ACCESS_CODE:
 
                 termo = st.text_input("Digite a palavra para buscar:")
 
-                if termo.strip():
-                    resultado = df[df.apply(lambda row: row.astype(str).str.contains(termo, case=False).any(), axis=1)]
-                    if resultado.empty:
-                        st.info("Nenhum resultado encontrado.")
-                    else:
-                        st.dataframe(resultado)
+               if termo.strip():
+    resultado = df[df.apply(lambda row: row.astype(str).str.contains(termo, case=False, regex=False).any(), axis=1)]
+    if resultado.empty:
+        st.info("Nenhum resultado encontrado.")
+    else:
+        st.dataframe(resultado)
+else:
+    st.info("Digite um termo válido para realizar a busca.")
+
                 else:
                     st.info("Digite um termo válido para realizar a busca.")
 
