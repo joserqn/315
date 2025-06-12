@@ -1,4 +1,3 @@
-O código está aqui
 import streamlit as st
 import pandas as pd
 import gspread
