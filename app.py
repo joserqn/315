@@ -1,10 +1,7 @@
 import streamlit as st
 import pandas as pd
-import gspread
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
-from google.oauth2.service_account import Credentials
-from st_aggrid import AgGrid, GridOptionsBuilder
 
 ACCESS_CODE = st.secrets["app"]["access_code"]
 
@@ -55,14 +52,27 @@ if user_code == ACCESS_CODE:
             else:
                 df = pd.DataFrame(values[1:], columns=values[0])
 
+                # Escolha colunas para busca
+                colunas_para_busca = st.multiselect("Selecione as colunas para buscar:", options=df.columns, default=df.columns.tolist())
+
                 termo = st.text_input("Digite a palavra para buscar:")
 
-                if termo:
-                    resultado = df[df.apply(lambda row: row.astype(str).str.contains(termo, case=False).any(), axis=1)]
+                # Limpar termo (remover espaços nas extremidades)
+                termo_limpo = termo.strip()
+
+                if termo_limpo and len(termo_limpo) > 1:  # busca só com termos relevantes (mais de 1 caractere)
+                    # Filtrar nas colunas selecionadas
+                    mask = df[colunas_para_busca].apply(lambda col: col.astype(str).str.contains(termo_limpo, case=False, na=False)).any(axis=1)
+                    resultado = df[mask]
+
                     if resultado.empty:
                         st.info("Nenhum resultado encontrado.")
                     else:
                         st.dataframe(resultado)
+                elif termo_limpo:
+                    st.info("Digite pelo menos 2 caracteres para a busca.")
+                else:
+                    st.info("Digite algo para buscar na tabela.")
 
         except Exception as e:
             st.error(f"Erro ao acessar a planilha: {e}")
