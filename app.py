@@ -3,12 +3,17 @@ import pandas as pd
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from st_aggrid import AgGrid, GridOptionsBuilder
+import string
 
 ACCESS_CODE = st.secrets["app"]["access_code"]
 
 st.title("Consulta de Planilha Protegida")
 
 user_code = st.text_input("Digite o código de acesso:", type="password")
+
+def termo_valido(termo):
+    # Verifica se termo tem pelo menos uma letra/número, ignora só espaços e pontuação
+    return bool(termo) and any(c.isalnum() for c in termo)
 
 if user_code == ACCESS_CODE:
     st.success("Acesso liberado.")
@@ -25,7 +30,6 @@ if user_code == ACCESS_CODE:
     sheet_link_or_id = st.text_input("Cole o link ou ID da planilha do Google Sheets:")
 
     if sheet_link_or_id:
-        # Extrair ID da planilha se for URL
         if "docs.google.com" in sheet_link_or_id:
             try:
                 sheet_id = sheet_link_or_id.split("/d/")[1].split("/")[0]
@@ -54,32 +58,27 @@ if user_code == ACCESS_CODE:
             else:
                 df = pd.DataFrame(values[1:], columns=values[0])
 
-                # Seleção múltipla das colunas que deseja filtrar
-                colunas_disponiveis = df.columns.tolist()
+                # Seleção de colunas para busca (checkbox multiselect)
                 colunas_selecionadas = st.multiselect(
-                    "Selecione as colunas para filtrar a busca:", colunas_disponiveis, default=colunas_disponiveis
+                    "Escolha as colunas para filtrar a busca:",
+                    options=df.columns.tolist(),
+                    default=df.columns.tolist()  # por padrão usa todas
                 )
 
                 termo = st.text_input("Digite a palavra para buscar:")
 
-                # Função para validar se o termo é apenas espaços/pontuação
-                import string
-                def termo_valido(t):
-                    return t and any(c.isalnum() for c in t)
-
                 if termo_valido(termo):
-                    # Busca só nas colunas selecionadas
                     resultado = df[
                         df[colunas_selecionadas]
                         .apply(lambda row: row.astype(str).str.contains(termo, case=False, regex=False).any(), axis=1)
                     ]
+
                     if resultado.empty:
                         st.info("Nenhum resultado encontrado.")
                     else:
-                        # Configura AgGrid para manter layout bonito e paginado
                         gb = GridOptionsBuilder.from_dataframe(resultado)
                         gb.configure_pagination(paginationAutoPageSize=True)
-                        gb.configure_default_column(groupable=True, editable=False, filter=True)
+                        gb.configure_default_column(groupable=True, editable=False)
                         gridOptions = gb.build()
 
                         AgGrid(resultado, gridOptions=gridOptions, fit_columns_on_grid_load=True)
